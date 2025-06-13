@@ -1,22 +1,18 @@
-// import SupabaseClient from '../config/supabaseClient.js';
+import jwt from 'jsonwebtoken';
+import dotenv from 'dotenv';
+dotenv.config();
 
-// const supabase = SupabaseClient.getClient();
+export const authMiddleware = (req, res, next) => {
+    const authHeader = req.headers.authorization;
+    if (!authHeader)
+        return res.status(401).json({ message: 'Missing Authorization header' });
 
-// export const authMiddleware = async (req, res, next) => {
-//     const authHeader = req.headers.authorization;
-
-//     if (!authHeader) {
-//         return res.status(401).json({ message: 'Missing Authorization header' });
-//     }
-
-//     const token = authHeader.split(' ')[1];
-
-//     const { data: { user }, error } = await supabase.auth.getUser(token);
-
-//     if (error || !user) {
-//         return res.status(401).json({ message: 'Invalid or expired token' });
-//     }
-
-//     req.user = user;
-//     next();
-// };
+    const token = authHeader.split(' ')[1];
+    try {
+        const payload = jwt.verify(token, process.env.JWT_SECRET);
+        req.user = { id: payload.id, email: payload.email };
+        next();
+    } catch (err) {
+        return res.status(401).json({ message: 'Invalid or expired token' });
+    }
+};
